@@ -1,0 +1,25 @@
+Server is listening on port 8888
+Client 127.0.0.1:55039 connected
+message-from-client: 127.0.0.1:55039
+GET /video.html HTTP/1.1
+message-to-client: 127.0.0.1:55039
+HTTP/1.1 200 OK
+Client 127.0.0.1:55039 disconnected
+Client 127.0.0.1:55040 connected
+message-from-client: 127.0.0.1:55040
+GET /bigpicture.jpeg HTTP/1.1
+Client 127.0.0.1:55041 connected
+message-from-client: 127.0.0.1:55041
+GET /video.mp4 HTTP/1.1
+Client 127.0.0.1:55042 connected
+message-from-client: 127.0.0.1:55042
+GET /purdue.jpeg HTTP/1.1
+message-to-client: 127.0.0.1:55040
+HTTP/1.1 200 OK
+Client 127.0.0.1:55040 disconnected
+message-to-client: 127.0.0.1:55041
+HTTP/1.1 200 OK
+Client 127.0.0.1:55041 disconnected
+message-to-client: 127.0.0.1:55042
+HTTP/1.1 200 OK
+Client 127.0.0.1:55042 disconnected

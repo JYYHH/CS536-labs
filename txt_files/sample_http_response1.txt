@@ -1,0 +1,21 @@
+HTTP/1.1 200 OK
+
+<!DOCTYPE html>
+<html>
+	<body>
+		<h1>Video Test</h1>
+		<p>The Future of Networking, and the Past of Protocols - Scott Shenker</p>
+		<p> Note: the video is released at Youtube, https://www.youtube.com/watch?v=YHeyuD89n1Y&t=123s&ab_channel=OpenNetworkingSummit </p>
+		<!--<iframe width="560" height="315" src="https://www.youtube.com/embed/YHeyuD89n1Y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+		-->
+		<iframe width="560" height="315" src="video.mp4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+		
+		
+		<p> A big picture.</p>
+		<img width="560" src="bigpicture.jpeg" alt="Picture" />
+
+
+		<p> A small picture.</p>
+		<img width="560" src="purdue.jpeg" alt="Picture" />
+	</body>
+</html>

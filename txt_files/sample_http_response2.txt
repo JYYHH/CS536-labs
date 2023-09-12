@@ -1,0 +1,3 @@
+HTTP/1.1 505 HTTP Version Not Supported
+
+<html><head><title>505 HTTP Version Not Supported</title></head><body><h1>505 HTTP Version Not Supported</h1></body></html>% 
