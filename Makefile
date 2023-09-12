@@ -5,6 +5,7 @@ targetMul = serverMul clientTCP
 targetWeb = serverWeb 
 
 HEADER = src/common.h
+FLAGS = -pthread -o
 
 normal: $(target) $(HEADER)
 TCP: $(targetTCP) $(HEADER)
@@ -13,21 +14,21 @@ Mul: $(targetMul) $(HEADER)
 Web: $(targetWeb) $(HEADER)
 
 server: src/server.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 client: src/client.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 serverTCP: src/serverTCP.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 clientTCP: src/clientTCP.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 serverUDP: src/serverUDP.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 clientUDP: src/clientUDP.c
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 serverMul: src/serverMul.c
-	gcc -pthread -o $@ $^
+	gcc $(FLAGS) $@ $^
 serverWeb: src/serverWeb.c 
-	gcc -o $@ $^
+	gcc $(FLAGS) $@ $^
 
 clean:
 	rm -rf $(target) $(targetTCP) $(targetUDP) $(targetMul) $(targetWeb)  *.log *.mp4 *.jpeg *.html

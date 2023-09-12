@@ -512,6 +512,9 @@ void *Web_TCP_server_handling(void *params){
         // only handle one request, and then end the channel
         handle_each_HTTP_request(&server_fd, client_whole_name);
     }
+    else{
+
+    }
 
 	// END PART
 	close(server_fd);
