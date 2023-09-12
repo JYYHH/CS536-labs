@@ -1,11 +1,16 @@
 #include "common.h"
-#include <pthread.h>
 #define NUM_TOTAL_THREAD 200 // define the max number of threads to receive client request
 
-int present_thread = 0;
-pthread_t thread[NUM_TOTAL_THREAD]; // define threads DS
-
 int main(int argc, char const* argv[]){
+	// sign the memory for thread data structure
+	thread_arr 
+		= (pthread_t *)
+			malloc(
+				sizeof(pthread_t) 
+					* 
+				NUM_TOTAL_THREAD
+			);
+
 	// check the param's lengths
 	server_arg_check(argc, argv);
 
@@ -32,18 +37,13 @@ int main(int argc, char const* argv[]){
 		ptr->address = address;
 		// In this case, create a thread to handle this request
 		pthread_create(
-			&thread[present_thread ++], 
+			&thread_arr[present_thread ++], 
 			NULL, 
 			TCP_server_handling, 
 			(void *)ptr
 		);
 	}
-	// wait for all 
-	for(int i=0;i<present_thread;i++)
-		pthread_join(thread[i], NULL);
-	// closing the listening socket
-	shutdown(sock, SHUT_RDWR);
-	return 0;
+	// We know we won't exit here..., so no close/shut_down/return 0
 }
 
 // 0 -> none suffix

@@ -28,9 +28,7 @@ int main(int argc, char const* argv[]){
 		// In this case, directly handle the req in current thread
 		(*TCP_server_handling)((void *)ptr);
 	}
-	// closing the listening socket
-	shutdown(sock, SHUT_RDWR);
-	return 0;
+	// We know we won't exit here..., so no close/shut_down/return 0
 }
 
 //    struct sockaddr_in {

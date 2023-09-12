@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <ctype.h>
+#include <pthread.h>
+#include <signal.h>
 
 #define MAX_BYTES 1024
 #define UDP_TRY 100
@@ -29,6 +31,22 @@ struct pthread_params{
 	int sfd;
 	struct sockaddr_in address;
 };
+
+int present_thread;
+pthread_t *thread_arr; // define threads DS
+int *global_server_sock_p;
+
+// The purpose of this function is helping server jumping out of serving loop safely 
+// In default, only TCP-like protocol will wake this up
+void sigint_handler(int sig){
+    printf("\nCaught SIGINT, AND The server will quit safely!\n");
+    // wait for all sub-threads
+	for(int i=0;i<present_thread;i++)
+		pthread_join(thread_arr[i], NULL);
+	// closing the listening socket
+	shutdown(*global_server_sock_p, SHUT_RDWR);
+    exit(0);   
+}     
 
 static inline void client_arg_check(
                         int argc, 
@@ -151,6 +169,8 @@ static inline void server_init(
                     ){
     
     int opt = 1;
+    present_thread = 0; // in order to quit correctly, we need to set this
+    global_server_sock_p = sock_p;
 
     // Creating TCP/UDP socket
 	if ((*sock_p = socket(AF_INET, type, 0)) < 0) {
@@ -186,6 +206,12 @@ static inline void server_init(
             perror("listen");
             exit(EXIT_FAILURE);
         }
+
+        // TCP also needs to set the signal behaving
+        // Ctrl+C sends SIGINT to this program, 
+        // and calls sigint_handler to end the server correctly and safely
+        if (signal(SIGINT, sigint_handler) == SIG_ERR)
+	        perror("signal error");  
     }
 }
 
