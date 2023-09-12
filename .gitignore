@@ -65,6 +65,6 @@ serverTCP
 serverUDP
 serverMul
 serverWeb
-.gitignore
 .DS_Store
 src/.DS_Store
+lab_report.md
