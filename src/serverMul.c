@@ -46,12 +46,6 @@ int main(int argc, char const* argv[]){
 	// We know we won't exit here..., so no close/shut_down/return 0
 }
 
-// 0 -> none suffix
-// 1 -> .txt
-// 2 -> .mp4
-// 3 -> .jpeg
-// 4 -> .html
-
 //    struct sockaddr_in {
 //        sa_family_t    sin_family; /* address family: AF_INET */
 //        in_port_t      sin_port;   /* port in network byte order */

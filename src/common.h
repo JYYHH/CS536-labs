@@ -27,6 +27,12 @@
 #define HIGH_EIGHT(x)   (((x) >> 8) & MY_MASK)
 #define LOW_EIGHT(x)    ((x) & MY_MASK)
 
+#define PERSISTENT 0 // define this to control the web server behaving
+
+char Body_404[] = "<html><head><title>404 Not found</title></head><body><h1>404 Not Found</h1></body></html>";
+char Body_400[] = "<html><head><title>400 Bad Request</title></head><body><h1>400 Bad Request</h1></body></html>";
+char Body_505[] = "<html><head><title>505 HTTP Version Not Supported</title></head><body><h1>505 HTTP Version Not Supported</h1></body></html>";
+
 struct pthread_params{
 	int sfd;
 	struct sockaddr_in address;
@@ -215,115 +221,6 @@ static inline void server_init(
     }
 }
 
-static inline int TCP_accept_with_server_fd(
-                        int *sock_p, 
-                        struct sockaddr_in *address
-                    ){
-    
-    // return the server_file_descriptor
-
-    int ret_fd, addrlen = sizeof(*address);
-
-    if (
-        (
-            ret_fd
-              = 
-            accept(
-                *sock_p, 
-                (struct sockaddr *)address, 
-                (socklen_t *)&addrlen
-            )
-        ) 
-        < 0
-       ){
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
-    
-    return ret_fd;
-}
-
-static inline void TCP_server_handle_names(
-                        int server_fd,
-                        struct sockaddr_in *address,
-                        char *client_whole_name,
-                        char *recv_buff
-                    ){
-
-	// successfully connected to a client, now get the info of the client side
-    // first get the ip and port, in order to form the name
-	sprintf(
-            client_whole_name, 
-            "%s:%d", 
-            inet_ntoa(address->sin_addr), 
-            ntohs(address->sin_port)
-        );
-	printf("Client connected from %s\n", client_whole_name);
-
-	// then build the file name by firstly strcpy
-	strcpy(recv_buff, client_whole_name);
-	int offset = strlen(recv_buff);
-	recv_buff[offset++] = '_'; // split sign
-	char extr;
-    
-    // recv the file type
-	read(server_fd, &extr, 1);
-
-	// printf("%d\n", extr);
-
-	if (extr == 0)
-		strcat(recv_buff, "recv");
-	else if (extr == 1)
-		strcat(recv_buff, "recv.txt");
-	else if (extr == 2)
-		strcat(recv_buff, "recv.mp4");
-	else if (extr == 3)
-		strcat(recv_buff, "recv.jpeg");
-	else if (extr == 4)
-		strcat(recv_buff, "recv.html");
-
-// 0 -> none suffix
-// 1 -> .txt
-// 2 -> .mp4
-// 3 -> .jpeg
-// 4 -> .html
-}
-
-void *TCP_server_handling(void *params){
-    // define the variables
-    char client_whole_name[45] = {0}, recv_buff[MAX_BYTES + 25] = {0};
-	FILE *local_file_p;
-	struct pthread_params *ptr = (struct pthread_params *)params;
-	int server_fd = ptr->sfd, valread = 0, package_cnt = 0;
-
-    // first handle the file name and server name
-    TCP_server_handle_names(
-        server_fd, 
-        &(ptr->address),
-        client_whole_name, 
-        recv_buff
-    );
-    // then open the local file in order to write into it
-	local_file_p = fopen(recv_buff, "wb");
-
-    // recv msg
-	while(valread = read(server_fd, recv_buff, MAX_BYTES)){
-		// default blocking mode with function "read"
-		package_cnt ++;
-		fwrite(recv_buff, 1, valread, local_file_p);
-		if (package_cnt % 1000 == 1)
-			printf("Packet %d received from client %s\n", package_cnt, client_whole_name);
-	}
-
-	// file end, closing the connected socket, and flush both recv content and logging into files
-    // Also free the space of the params variable
-	close(server_fd);
-	fclose(local_file_p);
-    free(params);
-	printf("Client %s disconnected\n", client_whole_name);
-	fflush(stdout); // flush the stdout to the logging file
-}
-
 static inline void UDP_server_handling(
                         int *sock_p, 
                         struct sockaddr_in *address
@@ -365,4 +262,262 @@ static inline void UDP_server_handling(
 	fclose(local_file_p);
 	printf("Video received and saved as 'received_video.mp4'\n");
 	fflush(stdout); // flush to the logging file
+}
+
+static inline int TCP_accept_with_server_fd(
+                        int *sock_p, 
+                        struct sockaddr_in *address
+                    ){
+    
+    // return the server_file_descriptor
+
+    int ret_fd, addrlen = sizeof(*address);
+
+    if (
+        (
+            ret_fd
+              = 
+            accept(
+                *sock_p, 
+                (struct sockaddr *)address, 
+                (socklen_t *)&addrlen
+            )
+        ) 
+        < 0
+       ){
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+    
+    return ret_fd;
+}
+
+static inline void TCP_server_handle_names(
+                        int type, // 1-> normal TCP; 2-> HTTP
+                        int *server_fd_p,
+                        struct sockaddr_in *address,
+                        char *client_whole_name,
+                        char *recv_buff
+                    ){
+
+	// successfully connected to a client, now get the info of the client side
+    // first get the ip and port, in order to form the name
+	sprintf(
+            client_whole_name, 
+            "%s:%d", 
+            inet_ntoa(address->sin_addr), 
+            ntohs(address->sin_port)
+        );
+    if (type == 1)
+    	printf("Client connected from %s\n", client_whole_name);
+    else{
+        if (type == 2)
+            printf("Client %s connected\n", client_whole_name);
+        // only Normal TCP needs the next steps
+        return;
+    }
+    
+    if (server_fd_p == NULL || recv_buff == NULL){
+        printf("CALL TCP_server_handle_names incorrectly\n");
+        fflush(stdout);
+        exit(5);
+    }
+
+	// then build the file name by firstly strcpy
+	strcpy(recv_buff, client_whole_name);
+	int offset = strlen(recv_buff);
+	recv_buff[offset++] = '_'; // split sign
+	char extr;
+    
+    // recv the file type
+	read(*server_fd_p, &extr, 1);
+
+	// printf("%d\n", extr);
+
+	if (extr == 0)
+		strcat(recv_buff, "recv");
+	else if (extr == 1)
+		strcat(recv_buff, "recv.txt");
+	else if (extr == 2)
+		strcat(recv_buff, "recv.mp4");
+	else if (extr == 3)
+		strcat(recv_buff, "recv.jpeg");
+	else if (extr == 4)
+		strcat(recv_buff, "recv.html");
+
+// 0 -> none suffix
+// 1 -> .txt
+// 2 -> .mp4
+// 3 -> .jpeg
+// 4 -> .html
+}
+
+void *TCP_server_handling(void *params){
+    // define the variables
+    char client_whole_name[45] = {0}, recv_buff[MAX_BYTES + 25] = {0};
+	FILE *local_file_p;
+	struct pthread_params *ptr = (struct pthread_params *)params;
+	int server_fd = ptr->sfd, valread = 0, package_cnt = 0;
+
+    // first handle the file name and client name
+    TCP_server_handle_names(
+        1,
+        &server_fd, 
+        &(ptr->address),
+        client_whole_name, 
+        recv_buff
+    );
+    // then open the local file in order to write into it
+	local_file_p = fopen(recv_buff, "wb");
+
+    // recv msg
+	while(valread = read(server_fd, recv_buff, MAX_BYTES)){
+		// default blocking mode with function "read"
+		package_cnt ++;
+		fwrite(recv_buff, 1, valread, local_file_p);
+		if (package_cnt % 1000 == 1)
+			printf(
+                "Packet %d received from client %s\n", 
+                package_cnt, 
+                client_whole_name
+            );
+	}
+
+	// file end, closing the connected socket, and flush both recv content and logging into files
+	close(server_fd);
+	fclose(local_file_p);
+    free(params); // Also free the space of the params variable
+	printf("Client %s disconnected\n", client_whole_name);
+	fflush(stdout); // flush the stdout to the logging file
+
+    return NULL;
+}
+
+static inline void handle_each_HTTP_request(
+                        int *server_fd_p,
+                        char *client_whole_name
+                    ){
+    
+    // define variables
+    char recv_buff[MAX_BYTES + 25] = {0};
+    char send_buff[MAX_BYTES + 25] = {0};
+    char *path, *method, *protocol, *host_name_with_port, *host_name;
+    FILE *local_file_p;
+    int valread, msg_length;
+
+    // receive an HTTP request, in this lab the GET request won't exceed 1024B
+    valread = read(*server_fd_p, recv_buff, MAX_BYTES);
+    printf("message-from-client: %s\n", client_whole_name);
+    recv_buff[valread] = '\0';
+    // printf("READ\n%s", recv_buff);
+    
+    // Parse the first line
+    path                 = (char *) malloc(1005);
+    method               = strtok(recv_buff,  " \t");
+    sprintf(path, "www%s", strtok(NULL, " \t"));
+    protocol             = strtok(NULL, " \t\r\n"); 
+    // Parse Second Line to get host name (just to make sure it's a normal URL_or_IP address)
+    strtok(NULL, " \t"); // Host: 
+    host_name_with_port  = strtok(NULL, " \t\r\n");
+    host_name            = strtok(host_name_with_port, ":");
+
+    // show the first line to stdout
+    printf("%s %s %s\n", method, path + 3, protocol);
+    // prepare response to client
+    printf("message-to-client: %s\n", client_whole_name);
+
+
+    // clear the send buffer 
+    memset(send_buff, 0, MAX_BYTES + 20);
+
+
+    // confirm whether 400 happens
+    if (
+        strcmp(method, "GET") != 0 
+          || 
+        (
+            host_name != NULL
+              &&
+            gethostbyname(host_name) == NULL
+        )
+    ){
+        // 400 Bad Request
+        printf("HTTP/1.1 400 Bad Request\n");
+        sprintf(
+            send_buff, 
+            "HTTP/1.1 \t400 \tBad Request \t\r\n\r\n%s", 
+            Body_400
+        );
+        send(*server_fd_p, send_buff, MAX_BYTES, 0);
+    }
+    // confirm whether 505 happens
+    else if (strcmp(protocol, "HTTP/1.1") != 0){
+        // 505 HTTP Version Not Supported
+        printf("HTTP/1.1 505 HTTP Version Not Supported\n");
+        sprintf(
+            send_buff, 
+            "HTTP/1.1 \t505 \tHTTP Version Not Supported \t\r\n\r\n%s", 
+            Body_505
+        );
+        send(*server_fd_p, send_buff, MAX_BYTES, 0);
+    }
+    // confirm whether 404 happens
+    else if (access(path, F_OK) != 0){
+        // 404 Not Found
+        printf("HTTP/1.1 404 Not found\n");
+        sprintf(
+            send_buff, 
+            "HTTP/1.1 \t404 \tNot found \t\r\n\r\n%s", 
+            Body_404
+        );
+        send(*server_fd_p, send_buff, MAX_BYTES, 0);
+    }
+    else{
+        // ALL RIGHT, 200 OK
+        printf("HTTP/1.1 200 OK\n");
+        sprintf(
+            send_buff, 
+            "HTTP/1.1 \t200 \tOK \t\r\n\r\n" // string length 23
+        );
+        local_file_p = fopen(path, "rb");
+        msg_length = fread(send_buff + 23, 1, MAX_BYTES - 23, local_file_p);
+        // combine the first line and the first part of content
+        send(*server_fd_p, send_buff, 23 + msg_length, 0);
+
+        while(msg_length = fread(send_buff, 1, MAX_BYTES, local_file_p))
+            send(*server_fd_p, send_buff, msg_length, 0);
+    }
+
+
+    // free the space
+    free(path);
+}   
+
+void *Web_TCP_server_handling(void *params){
+    // define the variables
+    char client_whole_name[45] = {0};
+	struct pthread_params *ptr = (struct pthread_params *)params;
+	int server_fd = ptr->sfd;
+
+    // first handle the client name
+    TCP_server_handle_names(
+        2,
+        NULL, 
+        &(ptr->address),
+        client_whole_name, 
+        NULL
+    );
+
+    if (!PERSISTENT){
+        // only handle one request, and then end the channel
+        handle_each_HTTP_request(&server_fd, client_whole_name);
+    }
+
+	// END PART
+	close(server_fd);
+    free(params); // Also free the space of the params variable
+	printf("Client %s disconnected\n", client_whole_name);
+	fflush(stdout); // flush the stdout to the logging file
+
+    return NULL;
 }

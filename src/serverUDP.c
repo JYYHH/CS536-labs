@@ -5,9 +5,8 @@ int main(int argc, char const* argv[]){
 	server_arg_check(argc, argv);
 
     // define variables
-	int sock = 0, server_fd, valread;
+	int sock = 0;
 	struct sockaddr_in address;
-	int addrlen = sizeof(address);
 
 	// server side init
 	server_init(SOCK_DGRAM, &sock, &address, argv);
