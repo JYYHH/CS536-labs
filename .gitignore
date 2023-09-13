@@ -56,6 +56,7 @@ dkms.conf
 *.jpeg
 *.html
 www/
+img/
 scp.sh
 client
 clientTCP

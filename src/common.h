@@ -426,11 +426,6 @@ static inline void handle_each_HTTP_request(
     // prepare response to client
     printf("message-to-client: %s\n", client_whole_name);
 
-
-    // clear the send buffer 
-    memset(send_buff, 0, MAX_BYTES + 20);
-
-
     // confirm whether 400 happens
     if (
         strcmp(method, "GET") != 0 
@@ -473,21 +468,34 @@ static inline void handle_each_HTTP_request(
         send(*server_fd_p, send_buff, MAX_BYTES, 0);
     }
     else{
-        // ALL RIGHT, 200 OK
+    // ALL RIGHT, 200 OK
+
+        // open the file to transfer
+        local_file_p = fopen(path, "rb");
+        // compute size of the file
+        fseek(local_file_p, 0L, SEEK_END);
+        int file_size = ftell(local_file_p);
+        rewind(local_file_p);
+        
         printf("HTTP/1.1 200 OK\n");
         sprintf(
             send_buff, 
-            "HTTP/1.1 \t200 \tOK \t\r\n\r\n" // string length 23
+            "HTTP/1.1 \t200 \tOK \t\r\nContent-Length: %d \t\r\n\r\n",
+            file_size
         );
-        local_file_p = fopen(path, "rb");
-        msg_length = fread(send_buff + 23, 1, MAX_BYTES - 23, local_file_p);
-        // combine the first line and the first part of content
-        send(*server_fd_p, send_buff, 23 + msg_length, 0);
+        msg_length = strlen(send_buff);
+        msg_length += fread(
+                        send_buff + msg_length, 
+                        1, 
+                        MAX_BYTES - msg_length, 
+                        local_file_p
+                    );
+        // combine the first line, header and the first part of content
+        send(*server_fd_p, send_buff, msg_length, 0);
 
         while(msg_length = fread(send_buff, 1, MAX_BYTES, local_file_p))
             send(*server_fd_p, send_buff, msg_length, 0);
     }
-
 
     // free the space
     free(path);
@@ -513,7 +521,8 @@ void *Web_TCP_server_handling(void *params){
         handle_each_HTTP_request(&server_fd, client_whole_name);
     }
     else{
-
+        // TO DO in the future
+        // to implement a persistant WEB Server
     }
 
 	// END PART

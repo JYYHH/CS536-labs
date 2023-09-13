@@ -26,6 +26,8 @@ make Web
 ```
 ### Run the bin
 - ___TOTALLY THE SAME AS WHAT IN___ [this pdf](./lab1-cs536.pdf)
+    - the first parameter of client can be a `url` as well, instead of an `ip` address.
+
 - in PartA and PartB, you should first launch server, and then client
     - In order to exit safely from the waiting loop of a TCP server (serverTCP/serverMul/serverWeb), you need to send a `SIGINT` signal to the process manually (by typing `Ctrl+C` in the terminal or using other shell command).
         - Remember only send `SIGINT` to the server when it's in idle.
