@@ -4,20 +4,20 @@ void insertevent(struct event *p){
   struct event *q, *qold;
 
   q = evlist;     /* q points to header of list in which p struct inserted */
-  if(q == NULL){   /* list is empty */
+  if (q == NULL){   /* list is empty */
     evlist=p;
     p->next=NULL;
     p->prev=NULL;
   }
   else{
-    for(qold = q; q !=NULL && p->evtime > q->evtime; q=q->next)
+    for (qold = q; q !=NULL && p->evtime > q->evtime; q=q->next)
       qold=q; 
-    if(q == NULL){   /* end of list */
+    if (q == NULL){   /* end of list */
       qold->next = p;
       p->prev = qold;
       p->next = NULL;
     }
-    else if(q == evlist){ /* front of list */
+    else if (q == evlist){ /* front of list */
       p->next=evlist;
       p->prev=NULL;
       p->next->prev=p;
@@ -35,7 +35,7 @@ void insertevent(struct event *p){
 void printevlist(){
   struct event *q;
   printf("--------------\nEvent List Follows:\n");
-  for(q = evlist; q!=NULL; q=q->next){
+  for (q = evlist; q!=NULL; q=q->next){
     printf("Event time: %f, type: %d entity: %d\n",q->evtime,q->evtype,q->eventity);
   }
   printf("--------------\n");
@@ -47,16 +47,16 @@ void send2neighbor(struct rtpkt packet){
   struct event *evptr;
   int lastime;
 
- /* be nice: check if source and destination id's are reasonable */
-  if(packet.sourceid < 0 || packet.sourceid > num_nodes){
+ /* be nice: check if  source and destination id's are reasonable */
+  if (packet.sourceid < 0 || packet.sourceid > num_nodes){
     printf("WARNING: illegal source id in your packet, ignoring packet!\n");
     return;
   }
-  if(packet.destid < 0 || packet.destid > num_nodes){
+  if (packet.destid < 0 || packet.destid > num_nodes){
     printf("WARNING: illegal dest id in your packet, ignoring packet!\n");
     return;
   }
-  if(packet.sourceid == packet.destid){
+  if (packet.sourceid == packet.destid){
     printf("WARNING: source and destination id's the same, ignoring packet!\n");
     return;
   }
@@ -76,6 +76,21 @@ void send2neighbor(struct rtpkt packet){
   insertevent(evptr);
 } 
 
+void build_graph(){
+  int read_buff[105], cnt = 0;
+  while(fscanf(topo_file_path, "%d", read_buff + cnt) == 1)
+    cnt ++;
+  num_nodes = (int)floor(sqrt(cnt + 0.3));
+  dts = (struct distance_table *) malloc(num_nodes * sizeof(struct distance_table));
+  link_costs = (int **) malloc(num_nodes * sizeof(int *));
+  for (int i = 0; i < num_nodes; i++){
+    link_costs[i] = (int *)malloc(num_nodes * sizeof(int));
+  }
+
+  for (int i = 0, t = 0; i < num_nodes; i++)
+    for (int j = 0; j < num_nodes; j++, t++)
+      link_costs[i][j] = read_buff[t];
+}
 
 void rtinit(struct distance_table *dt, int node, int *link_costs, int num_nodes)
 {
