@@ -43,6 +43,10 @@ struct distance_table *dts;
 int **link_costs; /*This is a 2D matrix stroing the content defined in topo file*/
 int num_nodes;
 
+// My vars
+int k_max;
+FILE 
+
 /* possible events: */
 /*Note in this lab, we only have one event, namely FROM_LAYER2.It refer to that the packet will pop out from layer3, you can add more event to emulate other activity for other layers. Like FROM_LAYER3*/
 #define  FROM_LAYER2     1
@@ -85,6 +89,15 @@ int main(int argc, char *argv[])
     Please write your own code to parse the input for each part. 
     Specifically, in part A you need parse the input file and get “num_nodes”, 
     and fill in the content of dts and link_costs */
+
+    if (argc != 3){
+        printf("Usage: ./<exe> [k_max] [Input topo file path]\n");
+        exit(1);
+    }
+
+    k_max = atoi(argv[1]);
+
+    // .........
 
     dts = (struct distance_table *) malloc(num_nodes * sizeof(struct distance_table));
     link_costs = (int **) malloc(num_nodes * sizeof(int *));
