@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -37,7 +39,7 @@ void build_graph();
 /********************* EVENT HANDLINE ROUTINES *******/
 /*  The next set of routines handle the event list   */
 /*****************************************************/
-void rtinit(struct distance_table *dt, int node, int *link_costs, int num_nodes);
+void rtinit(struct distance_table *dt, int node, int *link_cost);
 void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt);
 
 
@@ -46,6 +48,6 @@ extern struct event *evlist;
 extern struct distance_table *dts;
 extern int **link_costs;
 extern int num_nodes;
-extern float clocktime;
+extern int clocktime;
 extern FILE *topo_file_path;
 extern int kmax;

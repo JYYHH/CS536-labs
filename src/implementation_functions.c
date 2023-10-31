@@ -43,20 +43,20 @@ void printevlist(){
 
 
 /************************** send update to neighbor (packet.destid)***************/
-void send2neighbor(struct rtpkt packet){
+void send2neighbor(struct rtpkt *packet){
   struct event *evptr;
   int lastime;
 
  /* be nice: check if  source and destination id's are reasonable */
-  if (packet.sourceid < 0 || packet.sourceid > num_nodes){
+  if (packet->sourceid < 0 || packet->sourceid > num_nodes){
     printf("WARNING: illegal source id in your packet, ignoring packet!\n");
     return;
   }
-  if (packet.destid < 0 || packet.destid > num_nodes){
+  if (packet->destid < 0 || packet->destid > num_nodes){
     printf("WARNING: illegal dest id in your packet, ignoring packet!\n");
     return;
   }
-  if (packet.sourceid == packet.destid){
+  if (packet->sourceid == packet->destid){
     printf("WARNING: source and destination id's the same, ignoring packet!\n");
     return;
   }
@@ -64,8 +64,8 @@ void send2neighbor(struct rtpkt packet){
 /* create future event for arrival of packet at the other side */
   evptr = (struct event *)malloc(sizeof(struct event));
   evptr->evtype =  FROM_LAYER2;   /* packet will pop out from layer3 */
-  evptr->eventity = packet.destid; /* event occurs at other entity */
-  evptr->rtpktptr = &packet;       /* save ptr to my copy of packet */
+  evptr->eventity = packet->destid; /* event occurs at other entity */
+  evptr->rtpktptr = packet;       /* save ptr to my copy of packet */
 
 /* finally, compute the arrival time of packet at the other end.
    medium can not reorder, so make sure packet arrives between 1 and 10
@@ -81,8 +81,8 @@ void build_graph(){
   while(fscanf(topo_file_path, "%d", read_buff + cnt) == 1)
     cnt ++;
   num_nodes = (int)floor(sqrt(cnt + 0.3));
-  dts = (struct distance_table *) malloc(num_nodes * sizeof(struct distance_table));
-  link_costs = (int **) malloc(num_nodes * sizeof(int *));
+
+  link_costs = (int **)malloc(num_nodes * sizeof(int *));
   for (int i = 0; i < num_nodes; i++){
     link_costs[i] = (int *)malloc(num_nodes * sizeof(int));
   }
@@ -92,17 +92,31 @@ void build_graph(){
       link_costs[i][j] = read_buff[t];
 }
 
-void rtinit(struct distance_table *dt, int node, int *link_costs, int num_nodes)
-{
-    /* Todo: Please write the code here*/
+void rtinit(struct distance_table *dt, int node, int *link_cost){ 
+  // use "link_cost" instead of "link_costs" avoiding confusion
+  // delete the num_nodes var, cause it's global
+  
+  dt->costs = (int **)malloc(num_nodes * sizeof(int *));
+  for (int i = 0; i < num_nodes; i++){
+    dt->costs[i] = (int *)malloc(num_nodes * sizeof(int));
+    for (int j = 0; j < num_nodes; j++)
+      dt->costs[i][j] = -1; // initially, nothing can be reached
+  }
 
+  memcpy(dt->costs[node], link_costs, num_nodes * sizeof(int));
 
+  for (int i = 0; i < num_nodes; i++)
+    if (link_cost[i] > 0){ // finds a neighbor
+      rtpkt *rtp = (rtpkt *)malloc(sizeof(rtpkt));
+      rtp->sourceid = node;
+      rtp->destid = i;
+      rtp->mincost = (int *)malloc(num_nodes * sizeof(int));
+      memcpy(rtp->mincost, dt->costs[node], num_nodes * sizeof(int));
 
-
+      send2neighbor(rtp);
+    }
 }
 
-void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt)
-{
-    /* Todo: Please write the code here*/
+void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt){
 
 }

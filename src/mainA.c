@@ -3,15 +3,15 @@
 // define vars
 struct event *evlist = NULL;
 struct distance_table *dts; // for each node
-int **link_costs; // But this node knows the global information?
+int **link_costs; // >0 <-> neighbor
 int num_nodes; // how many nodes in network
-float clocktime = 0.000; // timestamp
+int clocktime = 0; // timestamp
 int kmax; // max round of iteration
 FILE *topo_file_path;
 
 int main(int argc, char *argv[]){
   /*
-    1. handle the input file, and initialize some vars
+    A.1 handle the input file, and initialize some vars
   */
   struct event *eventptr;
   if (argc != 3){
@@ -21,22 +21,24 @@ int main(int argc, char *argv[]){
   kmax = atoi(argv[1]), topo_file_path = fopen(argv[2], "r");
   build_graph();
   
+  /*
+    A.2 DV Initialization
+  */
+  dts = (struct distance_table *)malloc(num_nodes * sizeof(struct distance_table));
   for (int i = 0; i < num_nodes; i++){
-    rtinit(&dts[i], i, link_costs[i], num_nodes);
+    rtinit(&dts[i], i, link_costs[i]);
   }
   
-  
   while (1){
-  /* Todo: Please write the code here to handle the update of time slot k (We assume that in one slot k, the traffic can go through all the routers to reach the destination router)*/
-    eventptr = evlist;            /* get next event to simulate */
-    if (eventptr==NULL)
-      goto terminate;
-    evlist = evlist->next;        /* remove this event from event list */
+    eventptr = evlist;
+    if (eventptr == NULL || eventptr->evtime > kmax) // max_iteration
+      break;
+    evlist = evlist->next;
     if (evlist!=NULL)
-      evlist->prev=NULL;
+      evlist->prev = NULL;
     clocktime = eventptr->evtime;    /* update time to next event time */
     if (eventptr->evtype == FROM_LAYER2){
-      /* Todo: You need to modif y the rtupdate method and add more codes here for Part B and Part C.*/
+      /* Todo: You need to modify the rtupdate method and add more codes here for Part B and Part C.*/
       rtupdate(&dts[eventptr->eventity], *(eventptr->rtpktptr));
     }
     else{
@@ -47,10 +49,8 @@ int main(int argc, char *argv[]){
     free(eventptr);                    /* free memory for event struct   */
   }
   
+  // terminate: convergence
   
-
-  terminate:
-  /* Todo: Please write the code here to handle the case when distance vector converges*/
 
   return 0;
 }
