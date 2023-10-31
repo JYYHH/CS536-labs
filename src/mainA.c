@@ -29,6 +29,10 @@ int main(int argc, char *argv[]){
     rtinit(&dts[i], i, link_costs[i]);
   }
   
+  /*
+    A.3 DV Update
+  */
+
   while (1){
     eventptr = evlist;
     if (eventptr == NULL || eventptr->evtime > kmax) // max_iteration
@@ -50,7 +54,7 @@ int main(int argc, char *argv[]){
   }
   
   // terminate: convergence
-  
+
 
   return 0;
 }

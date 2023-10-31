@@ -107,7 +107,7 @@ void rtinit(struct distance_table *dt, int node, int *link_cost){
 
   for (int i = 0; i < num_nodes; i++)
     if (link_cost[i] > 0){ // finds a neighbor
-      rtpkt *rtp = (rtpkt *)malloc(sizeof(rtpkt));
+      struct rtpkt *rtp = (struct rtpkt *)malloc(sizeof(struct rtpkt));
       rtp->sourceid = node;
       rtp->destid = i;
       rtp->mincost = (int *)malloc(num_nodes * sizeof(int));

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 
 /* a rtpkt is the packet sent from one router to
@@ -34,7 +35,7 @@ struct event{
 // define functions here
 void insertevent(struct event *p);
 void printevlist(); // print the event list
-void send2neighbor(struct rtpkt packet);
+void send2neighbor(struct rtpkt *packet);
 void build_graph();
 /********************* EVENT HANDLINE ROUTINES *******/
 /*  The next set of routines handle the event list   */
