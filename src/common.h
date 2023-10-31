@@ -28,11 +28,15 @@ struct event{
 #define  FROM_LAYER2 1
 
 
-
 // define functions here
 void insertevent(struct event *p);
-void printevlist();
+void printevlist(); // print the event list
 void send2neighbor(struct rtpkt packet);
+/********************* EVENT HANDLINE ROUTINES *******/
+/*  The next set of routines handle the event list   */
+/*****************************************************/
+void rtinit(struct distance_table *dt, int node, int *link_costs, int num_nodes);
+void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt);
 
 
 // define vars here
@@ -41,3 +45,4 @@ extern struct distance_table *dts;
 extern int **link_costs;
 extern int num_nodes;
 extern float clocktime;
+extern FILE *topo_file_path;

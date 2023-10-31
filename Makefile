@@ -9,8 +9,12 @@ IMPLE = src/implementation_functions.c
 
 # define make mode
 test: $(target) $(HEADER)
+A: $(targetA) $(HEADER)
 
+# define the building of targets
 main: src/main.c
+	gcc $(FLAGS) $@ $^ $(IMPLE)
+mainA: src/mainA.c
 	gcc $(FLAGS) $@ $^ $(IMPLE)
 
 # define clean

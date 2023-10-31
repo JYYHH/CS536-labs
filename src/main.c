@@ -17,32 +17,6 @@ int **link_costs; /*This is a 2D matrix stroing the content defined in topo file
 int num_nodes;
 float clocktime = 0.000;
 
-/********************* EVENT HANDLINE ROUTINES *******/
-/*  The next set of routines handle the event list   */
-/*****************************************************/
- 
-void rtinit(struct distance_table *dt, int node, int *link_costs, int num_nodes)
-{
-    /* Todo: Please write the code here*/
-
-
-
-
-
-
-}
-
-void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt)
-{
-    /* Todo: Please write the code here*/
-
-
-
-
-
-
-}
-
 
 int main(int argc, char *argv[])
 {
