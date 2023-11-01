@@ -15,7 +15,6 @@ FILE *traffic_file_path;
 struct traffic *traf_list;
 int traf_len;
 // new functions
-
 void output_traffic(){
   printf("k=%d:\n", clocktime);
   for (int i = 0; i < traf_len; i++){
@@ -25,28 +24,39 @@ void output_traffic(){
 }
 
 int main(int argc, char *argv[]){
+  // new vars in C
+  int time_period;
+  int **linkc_[2], now_at = 0;
   /*
     A.1 handle the input file, and initialize some vars
   */
-  if (argc != 4){
-    printf("Usage: ./<exe> <k_max(max_iteration_times)> <file_path_to_topo> <file_path_to_traffic>\n");
+  if (argc != 6){
+    printf("Usage: ./<exe> <k_max(max_iteration_times)> <file_path_to_topo_A> <file_path_to_topo_B> <file_path_to_traffic> T_period\n");
     exit(1);
   }
   kmax = atoi(argv[1]);
-  topo_file_path = fopen(argv[2], "r");
-  traffic_file_path = fopen(argv[3], "r");
-  traf_list = (struct traffic *)malloc(1000 * sizeof(struct traffic)); // record the list of traffic
+  traffic_file_path = fopen(argv[4], "r");
+  time_period = atoi(argv[5]);
+  traf_list = (struct traffic *)malloc(MAX_TRAFFIC * sizeof(struct traffic)); // record the list of traffic
   traf_len = 0;
-  
-  // assume at most 1000 traffic
-  build_graph();
     // build traffic
   for(int tr_from, tr_to, tr_quant; fscanf(traffic_file_path, "%d %d %d", &tr_from, &tr_to, &tr_quant) == 3; )
     traf_list[traf_len++] = (struct traffic){tr_from, tr_to, tr_quant};
-  
+    // build two topologies
+  topo_file_path = fopen(argv[2], "r");
+  build_graph();
+  linkc_[0] = alloc_2d_matrix();
+  linkc_[1] = alloc_2d_matrix();
+  cp_2d_matrix(linkc_[0], link_costs);
+  topo_file_path = fopen(argv[3], "r");
+  build_graph();
+  cp_2d_matrix(linkc_[1], link_costs);
+
   /*
     A.2 DV Initialization
-  */
+  */    
+    // initially, the link_costs should be linkc_[0]
+  cp_2d_matrix(link_costs, linkc_[now_at]);
   dts = (struct distance_table *)malloc(num_nodes * sizeof(struct distance_table));
   for (int i = 0; i < num_nodes; i++)
     rtinit(&dts[i], i, link_costs[i]);
@@ -57,22 +67,29 @@ int main(int argc, char *argv[]){
   while (1){
     // judge whether exit
     eventptr = evlist;
-    if (eventptr == NULL) 
-      // nothing to transfer
-      // but still simulate to round k_max
-      break;
-
-    // delete present entry in list
-    evlist = evlist->next;
-    if (evlist != NULL)
-      evlist->prev = NULL;
+    if (eventptr == NULL){
+      eventptr = (struct event*)malloc(sizeof(struct event));
+      eventptr->evtype = WAIT_EVENT;   /* Converged, but still wait for the change */
+      eventptr->evtime = clocktime + 1; // simulate time plus 1
+    } 
+    else{
+      // delete present entry in list, only when it exists
+      evlist = evlist->next;
+      if (evlist != NULL)
+        evlist->prev = NULL;
+    }
     
-    // judge whether output
+    // judge whether output, or change the topo
     if (clocktime != eventptr->evtime){ // last same slot in past
       if (clocktime > 0){
         output_traffic();
-        // output_nxt();
-        // printevlist(); // check the events state
+        if (clocktime % time_period == 0){
+          now_at ^= 1;
+          cp_2d_matrix(link_costs, linkc_[now_at]);
+            // if no need for extra message passing, we can end here
+            // if need, add some functions down here:
+          // like: `message_all_node_to_recompute_dv()`, because each node can find the link_cost changes
+        }
       }
     }
 
@@ -85,7 +102,7 @@ int main(int argc, char *argv[]){
     if (eventptr->evtype == FROM_LAYER2){
       rtupdate(&dts[eventptr->eventity], eventptr->eventity, eventptr->rtpktptr);
     }
-    else{
+    else if (eventptr->evtype != WAIT_EVENT){// this is known
       printf("Panic: unknown event type\n"); 
       exit(2);
     }
@@ -98,15 +115,10 @@ int main(int argc, char *argv[]){
     free(eventptr);
   }
   
-  // terminate: convergenced -> simulation
-  while (clocktime <= kmax){
-    if (clocktime > 0)
-      output_traffic();
-    clocktime ++;
-  }
-
   free_work(); // free anything which is not freed
   free(traf_list);
+  free_2d_matrix(linkc_[0]);
+  free_2d_matrix(linkc_[1]);
 
   return 0;
 }

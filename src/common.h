@@ -38,6 +38,8 @@ struct traffic{
 /* possible events: */
 /*Note in this lab, we only have one event, namely FROM_LAYER2.It refer to that the packet will pop out from layer3, you can add more event to emulate other activity for other layers. Like FROM_LAYER3*/
 #define  FROM_LAYER2 1
+#define  WAIT_EVENT  2
+#define  MAX_TRAFFIC 1000
 
 
 // define functions here
@@ -76,4 +78,5 @@ extern int kmax;
 int **alloc_2d_matrix();
 void init_1d_vector(int *dst, const int *src);
 void init_1d_nxt(int *dst, const int *src);
+void cp_2d_matrix(int **dst, int **src);
 void free_2d_matrix(int **need_be_fr);

@@ -14,6 +14,11 @@ void init_1d_nxt(int *dst, const int *src){
   for (int i = 0; i < num_nodes; i++)
     dst[i] = (src[i] >= 0 ? i : -1);
 }
+void cp_2d_matrix(int **dst, int **src){
+  for (int i = 0; i < num_nodes; i++){
+    memcpy(dst[i], src[i], num_nodes * sizeof(int));
+  }
+}
 void free_2d_matrix(int **need_be_fr){
   for (int i = 0; i < num_nodes; i++){
     free(need_be_fr[i]);
@@ -105,7 +110,8 @@ void build_graph(){
     cnt ++;
   num_nodes = (int)floor(sqrt(cnt + 0.3));
 
-  link_costs = alloc_2d_matrix();
+  if (link_costs == NULL)
+    link_costs = alloc_2d_matrix();
 
   for (int i = 0; i < num_nodes; i++)
     init_1d_vector(link_costs[i], read_buff + i * num_nodes);
@@ -244,9 +250,16 @@ void route(int src_id, int dst_id){
     return;
   }
 
-  int now = src_id;
+  int now = src_id, *vst = (int *)malloc(sizeof(int) * num_nodes);
+  memset(vst, 0, sizeof(int) * num_nodes);
+
   while(now != dst_id){
+    if (vst[now] == 1){
+      printf("%d (drop)\n", now);
+      return;
+    }
     printf("%d>", now);
+    vst[now] = 1;
     now = dts[now].nxts[dst_id];
   }
   printf("%d\n", now);
