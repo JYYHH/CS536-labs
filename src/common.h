@@ -29,6 +29,12 @@ struct event{
    struct event *next;
 };
 
+struct traffic{
+   int from;
+   int to;
+   int quant;
+};
+
 /* possible events: */
 /*Note in this lab, we only have one event, namely FROM_LAYER2.It refer to that the packet will pop out from layer3, you can add more event to emulate other activity for other layers. Like FROM_LAYER3*/
 #define  FROM_LAYER2 1
@@ -52,6 +58,8 @@ void free_work();
 int is_diff(int *cost1, int *cost2);
 void output_dvs();
 void output_nxt();
+void output_traffic();
+void route(int src_id, int dst_id);
 
 
 // define vars here

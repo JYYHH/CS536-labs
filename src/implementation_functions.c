@@ -237,3 +237,17 @@ void output_nxt(){
     puts("");
   }
 }
+
+void route(int src_id, int dst_id){
+  if(dts[src_id].costs[src_id][dst_id] == -1){
+    printf("Error! node %d reports not available to reach node %d\n", src_id, dst_id);
+    return;
+  }
+
+  int now = src_id;
+  while(now != dst_id){
+    printf("%d>", now);
+    now = dts[now].nxts[dst_id];
+  }
+  printf("%d\n", now);
+}
