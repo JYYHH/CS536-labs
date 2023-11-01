@@ -17,6 +17,7 @@ struct rtpkt{
 
 struct distance_table{
     int **costs;     // the distance table of curr_node, costs[i][j] is the cost from node i to node j
+    int **nxts;
 };
 
 struct event{
@@ -61,3 +62,8 @@ extern int num_nodes;
 extern int clocktime;
 extern FILE *topo_file_path;
 extern int kmax;
+
+// define some fundamental functions
+int **alloc_2d_matrix();
+void init_1d_vector(int *dst, const int *src);
+void free_2d_matrix(int **need_be_fr);

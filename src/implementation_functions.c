@@ -1,5 +1,24 @@
 #include "common.h"
 
+int **alloc_2d_matrix(){
+   int **ret = (int **)malloc(num_nodes * sizeof(int *));
+   for (int i = 0; i < num_nodes; i++){
+      ret[i] = (int *)malloc(num_nodes * sizeof(int));
+   }
+   return ret;
+}
+void init_1d_vector(int *dst, const int *src){
+   memcpy(dst, src, num_nodes * sizeof(int));
+}
+void free_2d_matrix(int **need_be_fr){
+   for (int i = 0; i < num_nodes; i++){
+      free(need_be_fr[i]);
+   }
+   free(need_be_fr);
+}
+
+// above is some useful fundamental functions
+
 void insertevent(struct event *p){
   struct event *q, *qold;
 
@@ -82,14 +101,10 @@ void build_graph(){
     cnt ++;
   num_nodes = (int)floor(sqrt(cnt + 0.3));
 
-  link_costs = (int **)malloc(num_nodes * sizeof(int *));
-  for (int i = 0; i < num_nodes; i++){
-    link_costs[i] = (int *)malloc(num_nodes * sizeof(int));
-  }
+  link_costs = alloc_2d_matrix();
 
-  for (int i = 0, t = 0; i < num_nodes; i++)
-    for (int j = 0; j < num_nodes; j++, t++)
-      link_costs[i][j] = read_buff[t];
+  for (int i = 0; i < num_nodes; i++)
+    init_1d_vector(link_costs[i], read_buff + i * num_nodes);
 }
 
 struct rtpkt *build_message(int from, int to, int *msg){
@@ -104,15 +119,12 @@ struct rtpkt *build_message(int from, int to, int *msg){
 void rtinit(struct distance_table *dt, int node, int *link_cost){ 
   // use "link_cost" instead of "link_costs" avoiding confusion
   // delete the num_nodes var, cause it's global
-  
-  dt->costs = (int **)malloc(num_nodes * sizeof(int *));
-  for (int i = 0; i < num_nodes; i++){
-    dt->costs[i] = (int *)malloc(num_nodes * sizeof(int));
+  dt->costs = alloc_2d_matrix();
+  for (int i = 0; i < num_nodes; i++)
     for (int j = 0; j < num_nodes; j++)
       dt->costs[i][j] = -1; // initially, nothing can be reached
-  }
 
-  memcpy(dt->costs[node], link_cost, num_nodes * sizeof(int));
+  init_1d_vector(dt->costs[node], link_cost);
 
   for (int i = 0; i < num_nodes; i++)
     if (link_cost[i] > 0){ // finds a neighbor
@@ -123,7 +135,7 @@ void rtinit(struct distance_table *dt, int node, int *link_cost){
 
 void recompute_dist(struct distance_table *dt, int node, const int *link_cost){
   // reinitialize
-  memcpy(dt->costs[node], link_cost, num_nodes * sizeof(int));
+  init_1d_vector(dt->costs[node], link_cost);
 
   // using neighbors' information
   for (int i = 0; i < num_nodes; i++)
@@ -158,6 +170,9 @@ void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const
         struct rtpkt *rtp = build_message(node, i, dt->costs[node]);
         send2neighbor(rtp);
       }
+
+  // 5. Eventually, do not forget to free the space
+  free(copy_one);
 }
 
 void free_work(){
@@ -172,25 +187,14 @@ void free_work(){
     free(old_one);
   }
 
-  // printf("evlist freed\n");
-
   // free the `link_costs`
-  for (int i = 0; i < num_nodes; i++){
-    free(link_costs[i]);
-  }
-  free(link_costs);
-
-  // printf("link_costs freed\n");
+  free_2d_matrix(link_costs);
 
   // free the `dts`
   for (int i = 0; i < num_nodes; i++){
-    for (int j = 0; j < num_nodes; j++)
-      free(dts[i].costs[j]);
-    free(dts[i].costs);
+    free_2d_matrix(dts[i].costs);
   }
   free(dts);
-
-  // printf("dts freed\n");
 }
 
 int is_diff(int *cost1, int *cost2){
