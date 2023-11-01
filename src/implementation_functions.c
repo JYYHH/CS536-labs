@@ -10,7 +10,7 @@ void insertevent(struct event *p){
     p->prev=NULL;
   }
   else{
-    for (qold = q; q !=NULL && p->evtime > q->evtime; q=q->next)
+    for (qold = q; q !=NULL && p->evtime > q->evtime; q = q->next)
       qold=q; 
     if (q == NULL){   /* end of list */
       qold->next = p;
@@ -35,7 +35,7 @@ void insertevent(struct event *p){
 void printevlist(){
   struct event *q;
   printf("--------------\nEvent List Follows:\n");
-  for (q = evlist; q!=NULL; q=q->next){
+  for (q = evlist; q != NULL; q = q->next){
     printf("Event time: %f, type: %d entity: %d\n",q->evtime,q->evtype,q->eventity);
   }
   printf("--------------\n");
@@ -77,7 +77,7 @@ void send2neighbor(struct rtpkt *packet){
 } 
 
 void build_graph(){
-  int read_buff[105], cnt = 0;
+  int read_buff[105], cnt = 0; // assume that nodes are no more than 10
   while(fscanf(topo_file_path, "%d", read_buff + cnt) == 1)
     cnt ++;
   num_nodes = (int)floor(sqrt(cnt + 0.3));
@@ -92,6 +92,15 @@ void build_graph(){
       link_costs[i][j] = read_buff[t];
 }
 
+struct rtpkt *build_message(int from, int to, int *msg){
+  struct rtpkt *ret = (struct rtpkt *)malloc(sizeof(struct rtpkt));
+  ret->sourceid = from;
+  ret->destid = to;
+  ret->mincost = (int *)malloc(num_nodes * sizeof(int));
+  memcpy(ret->mincost, msg, num_nodes * sizeof(int));
+  return ret;
+}
+
 void rtinit(struct distance_table *dt, int node, int *link_cost){ 
   // use "link_cost" instead of "link_costs" avoiding confusion
   // delete the num_nodes var, cause it's global
@@ -103,20 +112,100 @@ void rtinit(struct distance_table *dt, int node, int *link_cost){
       dt->costs[i][j] = -1; // initially, nothing can be reached
   }
 
-  memcpy(dt->costs[node], link_costs, num_nodes * sizeof(int));
+  memcpy(dt->costs[node], link_cost, num_nodes * sizeof(int));
 
   for (int i = 0; i < num_nodes; i++)
     if (link_cost[i] > 0){ // finds a neighbor
-      struct rtpkt *rtp = (struct rtpkt *)malloc(sizeof(struct rtpkt));
-      rtp->sourceid = node;
-      rtp->destid = i;
-      rtp->mincost = (int *)malloc(num_nodes * sizeof(int));
-      memcpy(rtp->mincost, dt->costs[node], num_nodes * sizeof(int));
-
+      struct rtpkt *rtp = build_message(node, i, dt->costs[node]);
       send2neighbor(rtp);
     }
 }
 
-void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt){
+void recompute_dist(struct distance_table *dt, int node, const int *link_cost){
+  // reinitialize
+  memcpy(dt->costs[node], link_cost, num_nodes * sizeof(int));
 
+  // using neighbors' information
+  for (int i = 0; i < num_nodes; i++)
+    if (link_cost[i] > 0) // finds a neighbor
+      for (int j = 0; j < num_nodes; j++)
+        if (dt->costs[i][j] >= 0){ // a path to 'j'
+          int CostALL = link_cost[i] + dt->costs[i][j];
+          if (dt->costs[node][j] == -1 || CostALL < dt->costs[node][j])
+            dt->costs[node][j] = CostALL;
+        }
+}
+
+void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const int mode){
+  assert(node == recv_pkt->destid); // whether something goes wrong
+  const int msg_from = recv_pkt->sourceid;
+  const int *link_cost = link_costs[node];
+
+  // 1. copy the original dis_vec
+  int *copy_one = (int *)malloc(num_nodes * sizeof(int));
+  memcpy(copy_one, dt->costs[node], num_nodes * sizeof(int));
+
+  // 2. update new one
+  memcpy(dt->costs[msg_from], recv_pkt->mincost, num_nodes * sizeof(int));
+
+  // 3. recompute 
+  recompute_dist(dt, node, link_cost);
+
+  // 4. if change, send msg to neighbors
+  if (is_diff(copy_one, dt->costs[node]) || mode == 0)
+    for (int i = 0; i < num_nodes; i++)
+      if (link_cost[i] > 0){ // finds a neighbor
+        struct rtpkt *rtp = build_message(node, i, dt->costs[node]);
+        send2neighbor(rtp);
+      }
+}
+
+void free_work(){
+  // free all the message
+  while (evlist != NULL){
+    if (evlist->evtype == FROM_LAYER2){
+      free(evlist->rtpktptr->mincost);
+      free(evlist->rtpktptr);
+    }
+    struct event *old_one = evlist;
+    evlist = evlist->next;
+    free(old_one);
+  }
+
+  // printf("evlist freed\n");
+
+  // free the `link_costs`
+  for (int i = 0; i < num_nodes; i++){
+    free(link_costs[i]);
+  }
+  free(link_costs);
+
+  // printf("link_costs freed\n");
+
+  // free the `dts`
+  for (int i = 0; i < num_nodes; i++){
+    for (int j = 0; j < num_nodes; j++)
+      free(dts[i].costs[j]);
+    free(dts[i].costs);
+  }
+  free(dts);
+
+  // printf("dts freed\n");
+}
+
+int is_diff(int *cost1, int *cost2){
+  for (int i = 0; i < num_nodes; i++)
+    if (cost1[i] != cost2[i])
+     return 1;
+  return 0;
+}
+
+void output_dvs(){
+  printf("k=%d:\n", clocktime);
+  for (int i = 0; i < num_nodes; i++){
+    printf("node-%d:", i);
+    for (int j = 0; j < num_nodes; j++)
+      printf(" %d", dts[i].costs[i][j]);
+    puts("");
+  }
 }

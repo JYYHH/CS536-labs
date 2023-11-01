@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 
 
 /* a rtpkt is the packet sent from one router to
@@ -37,14 +38,22 @@ void insertevent(struct event *p);
 void printevlist(); // print the event list
 void send2neighbor(struct rtpkt *packet);
 void build_graph();
+struct rtpkt *build_message(int from, int to, int *msg);
 /********************* EVENT HANDLINE ROUTINES *******/
 /*  The next set of routines handle the event list   */
 /*****************************************************/
 void rtinit(struct distance_table *dt, int node, int *link_cost);
-void rtupdate(struct distance_table *dt, struct rtpkt recv_pkt);
+void recompute_dist(struct distance_table *dt, int node, const int *link_cost);
+void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const int mode);
+   // mode = 0 -> for part A, pass the message until k_max reaches, no matter whether DV changes; or other solution (already taken)
+   // mode = 1 -> optimal, pass the message only when DV changes
+void free_work();
+int is_diff(int *cost1, int *cost2);
+void output_dvs();
 
 
 // define vars here
+// extern struct event *eventptr; // no need to use this one as global
 extern struct event *evlist;
 extern struct distance_table *dts;
 extern int **link_costs;
