@@ -156,6 +156,8 @@ void recompute_dist(struct distance_table *dt, int node, const int *link_cost){
             dt->costs[node][j] = CostALL;
             dt->nxts[j] = i;
           }
+          else if (CostALL == dt->costs[node][j] && i < dt->nxts[j])
+            dt->nxts[j] = i; // in order to find the smallest one
         }
 }
 
