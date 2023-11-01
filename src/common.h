@@ -17,7 +17,7 @@ struct rtpkt{
 
 struct distance_table{
     int **costs;     // the distance table of curr_node, costs[i][j] is the cost from node i to node j
-    int **nxts;
+    int *nxts;      // the next node to a specific node
 };
 
 struct event{
@@ -45,12 +45,13 @@ struct rtpkt *build_message(int from, int to, int *msg);
 /*****************************************************/
 void rtinit(struct distance_table *dt, int node, int *link_cost);
 void recompute_dist(struct distance_table *dt, int node, const int *link_cost);
-void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const int mode);
+void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt);
    // mode = 0 -> for part A, pass the message until k_max reaches, no matter whether DV changes; or other solution (already taken)
    // mode = 1 -> optimal, pass the message only when DV changes
 void free_work();
 int is_diff(int *cost1, int *cost2);
 void output_dvs();
+void output_nxt();
 
 
 // define vars here
@@ -66,4 +67,5 @@ extern int kmax;
 // define some fundamental functions
 int **alloc_2d_matrix();
 void init_1d_vector(int *dst, const int *src);
+void init_1d_nxt(int *dst, const int *src);
 void free_2d_matrix(int **need_be_fr);

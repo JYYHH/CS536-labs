@@ -1,20 +1,24 @@
 #include "common.h"
 
 int **alloc_2d_matrix(){
-   int **ret = (int **)malloc(num_nodes * sizeof(int *));
-   for (int i = 0; i < num_nodes; i++){
-      ret[i] = (int *)malloc(num_nodes * sizeof(int));
-   }
-   return ret;
+  int **ret = (int **)malloc(num_nodes * sizeof(int *));
+  for (int i = 0; i < num_nodes; i++){
+    ret[i] = (int *)malloc(num_nodes * sizeof(int));
+  }
+  return ret;
 }
 void init_1d_vector(int *dst, const int *src){
-   memcpy(dst, src, num_nodes * sizeof(int));
+  memcpy(dst, src, num_nodes * sizeof(int));
+}
+void init_1d_nxt(int *dst, const int *src){
+  for (int i = 0; i < num_nodes; i++)
+    dst[i] = (src[i] >= 0 ? i : -1);
 }
 void free_2d_matrix(int **need_be_fr){
-   for (int i = 0; i < num_nodes; i++){
-      free(need_be_fr[i]);
-   }
-   free(need_be_fr);
+  for (int i = 0; i < num_nodes; i++){
+    free(need_be_fr[i]);
+  }
+  free(need_be_fr);
 }
 
 // above is some useful fundamental functions
@@ -120,11 +124,15 @@ void rtinit(struct distance_table *dt, int node, int *link_cost){
   // use "link_cost" instead of "link_costs" avoiding confusion
   // delete the num_nodes var, cause it's global
   dt->costs = alloc_2d_matrix();
-  for (int i = 0; i < num_nodes; i++)
+  dt->nxts = (int *)malloc(num_nodes * sizeof(int));
+  for (int i = 0; i < num_nodes; i++){
+    dt->nxts[i] = -1;
     for (int j = 0; j < num_nodes; j++)
       dt->costs[i][j] = -1; // initially, nothing can be reached
+  }
 
   init_1d_vector(dt->costs[node], link_cost);
+  init_1d_nxt(dt->nxts, link_cost);
 
   for (int i = 0; i < num_nodes; i++)
     if (link_cost[i] > 0){ // finds a neighbor
@@ -136,6 +144,7 @@ void rtinit(struct distance_table *dt, int node, int *link_cost){
 void recompute_dist(struct distance_table *dt, int node, const int *link_cost){
   // reinitialize
   init_1d_vector(dt->costs[node], link_cost);
+  init_1d_nxt(dt->nxts, link_cost);
 
   // using neighbors' information
   for (int i = 0; i < num_nodes; i++)
@@ -143,12 +152,14 @@ void recompute_dist(struct distance_table *dt, int node, const int *link_cost){
       for (int j = 0; j < num_nodes; j++)
         if (dt->costs[i][j] >= 0){ // a path to 'j'
           int CostALL = link_cost[i] + dt->costs[i][j];
-          if (dt->costs[node][j] == -1 || CostALL < dt->costs[node][j])
+          if (dt->costs[node][j] == -1 || CostALL < dt->costs[node][j]){
             dt->costs[node][j] = CostALL;
+            dt->nxts[j] = i;
+          }
         }
 }
 
-void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const int mode){
+void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt){
   assert(node == recv_pkt->destid); // whether something goes wrong
   const int msg_from = recv_pkt->sourceid;
   const int *link_cost = link_costs[node];
@@ -164,7 +175,7 @@ void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt, const
   recompute_dist(dt, node, link_cost);
 
   // 4. if change, send msg to neighbors
-  if (is_diff(copy_one, dt->costs[node]) || mode == 0)
+  if (is_diff(copy_one, dt->costs[node]))
     for (int i = 0; i < num_nodes; i++)
       if (link_cost[i] > 0){ // finds a neighbor
         struct rtpkt *rtp = build_message(node, i, dt->costs[node]);
@@ -193,6 +204,7 @@ void free_work(){
   // free the `dts`
   for (int i = 0; i < num_nodes; i++){
     free_2d_matrix(dts[i].costs);
+    free(dts[i].nxts);
   }
   free(dts);
 }
@@ -210,6 +222,16 @@ void output_dvs(){
     printf("node-%d:", i);
     for (int j = 0; j < num_nodes; j++)
       printf(" %d", dts[i].costs[i][j]);
+    puts("");
+  }
+}
+
+void output_nxt(){
+  printf("k=%d:\n", clocktime);
+  for (int i = 0; i < num_nodes; i++){
+    printf("node-%d:", i);
+    for (int j = 0; j < num_nodes; j++)
+      printf(" %d", dts[i].nxts[j]);
     puts("");
   }
 }

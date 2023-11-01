@@ -48,6 +48,7 @@ int main(int argc, char *argv[]){
     if (clocktime != eventptr->evtime){ // last same slot in past
       if ((clocktime >= 0 && clocktime < 5) || clocktime % 10 == 0){
         output_dvs();
+        // output_nxt();
         // printevlist(); // check the events state
       }
     }
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]){
     // current work
     if (eventptr->evtype == FROM_LAYER2){
       /* Todo: You need to modify the rtupdate method and add more codes here for Part B and Part C.*/
-      rtupdate(&dts[eventptr->eventity], eventptr->eventity, eventptr->rtpktptr, 1);
+      rtupdate(&dts[eventptr->eventity], eventptr->eventity, eventptr->rtpktptr);
     }
     else{
       printf("Panic: unknown event type\n"); 
