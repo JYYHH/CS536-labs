@@ -1,5 +1,7 @@
 #include "common.h"
 
+// update: Not only recv a dv vector from neighbor will cause the recompute, the change on link will also cause.
+
 // define vars
 struct event *evlist = NULL;
 struct event *eventptr = NULL;
@@ -86,9 +88,10 @@ int main(int argc, char *argv[]){
         if (clocktime % time_period == 0){
           now_at ^= 1;
           cp_2d_matrix(link_costs, linkc_[now_at]);
-            // if no need for extra message passing, we can end here
-            // if need, add some functions down here:
-          // like: `message_all_node_to_recompute_dv()`, because each node can find the link_cost changes
+          
+          for (int i = 0; i < num_nodes; i++)
+            if (is_diff(linkc_[now_at][i], linkc_[now_at^1][i]))
+              rtupdate_link_change(&dts[i], i);
         }
       }
     }

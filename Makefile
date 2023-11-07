@@ -7,7 +7,7 @@ targetC = mainC
 # define Headers and Flags
 HEADER = src/common.h
 FLAGS = -o
-IMPLE = src/implementation_functions.c
+IMPLE = src/implementation_functions.c -lm
 
 # define make mode
 test: $(target) $(HEADER)

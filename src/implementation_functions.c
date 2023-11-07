@@ -194,6 +194,30 @@ void rtupdate(struct distance_table *dt, int node, struct rtpkt *recv_pkt){
   free(copy_one);
 }
 
+void rtupdate_link_change(struct distance_table *dt, int node){
+  const int *link_cost = link_costs[node];
+
+  // 1. copy the original dis_vec
+  int *copy_one = (int *)malloc(num_nodes * sizeof(int));
+  memcpy(copy_one, dt->costs[node], num_nodes * sizeof(int));
+
+  // 2. skip
+
+  // 3. recompute 
+  recompute_dist(dt, node, link_cost);
+
+  // 4. if change, send msg to neighbors
+  if (is_diff(copy_one, dt->costs[node]))
+    for (int i = 0; i < num_nodes; i++)
+      if (link_cost[i] > 0){ // finds a neighbor
+        struct rtpkt *rtp = build_message(node, i, dt->costs[node]);
+        send2neighbor(rtp);
+      }
+
+  // 5. Eventually, do not forget to free the space
+  free(copy_one);
+}
+
 void free_work(){
   // free all the message
   while (evlist != NULL){
